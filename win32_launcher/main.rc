@@ -1,0 +1,34 @@
+#include "winresrc.h"
+// when compiling, need to define MAIN_APP_NAME: "readGPC" / "subBkgd" / "calcConv"
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION	0,5,0,0
+ PRODUCTVERSION	0,5,0,0
+ FILEFLAGSMASK	0x3fL
+ FILEFLAGS	0x0L
+ FILEOS	0x40004L
+ FILETYPE	0x1L
+ FILESUBTYPE	0x0L
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "000004b0"
+		BEGIN
+			VALUE "CompanyName",	"Z.Sun"
+			VALUE "LegalCopyright",	"Copyright(C) Z.Sun, 2024 All rights reserved."
+			VALUE "ProductName",	MAIN_APP_NAME
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0000, 0x04b0
+	END
+END
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
+
+1 ICON DISCARDABLE "res\\" MAIN_APP_NAME ".ico"
+
+1 MANIFEST DISCARDABLE "res\\main.manifest"
