@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+from readGPC import *
+
+def plotFile(filename, offset=0):
+    global num, ymin, ymax
+    data = readFile(filename, baseline)
+    if data is None:
+        return
+    num += 1
+    x, y, _ymin, _ymax = data
+    longName = p.splitext(p.basename(filename))[0]
+    output[0].append(longName)
+    output[1].append(x)
+    output[1].append(y)
+    y += offset
+    _ymin += offset
+    _ymax += offset
+    if _ymin < ymin:
+        ymin = _ymin
+    if _ymax > ymax:
+        ymax = _ymax
+    plt.plot(x, y, LINE_MARKER, label=longName.replace(FILENAME_ESCAPE_CHAR, '\\') if LONG_NAME else str(num))
+
+argv, dir_o, baseline = getInput()
+
+fn = SAVE_FILENAME
+if '|' in fn: # format file name for saving
+    fnl = fn.split('|')
+    for i, x in enumerate(fnl):
+        if x[:9] == 'datetime:':
+            fnl[i] = time.strftime(x[9:], time.localtime())
+        if x == 'gpcname':
+            fnl[i] = GPC_NAME
+    fn = ''.join(fnl)
+    if fnl[0] == 'dir':
+        fn = p.join(dir_o, fn[3:])
+
+ymin = 0; ymax = 0 # take into account negative peaks, then the plot range will be [ymin, ymax] instead of [0, 1]
+output = [[], []]
+
+fig, ax = plt.subplots(figsize=FIG_SIZE, dpi=FIG_DPI_DISPLAY)
+fig.patch.set_visible(False)
+ax.patch.set_visible(False) # transparent background
+
+for i, fname in enumerate(argv):
+    plotFile(fname, offset=i*OFFSET)
+if not num:
+    print('No valid input file to plot.')
+    sys.exit()
+plt.legend()
+plt.xlabel(XLABEL)
+plt.ylabel(YLABEL)
+if AUTO_CROP:
+    plt.xlim(NORM_RANGE)
+    plt.ylim(ymin-MARGIN, ymax+MARGIN)
+plt.tight_layout()
+plt.show()
+
+print()
+types = SAVE_TYPES.lower()
+if types == 'ask':
+    print("Which of the following file type(s) would you like to save as:\n- PNG : overlaid bitmap graphic\n- SVG : overlad vector graphic\n- CSV : combined spreadsheet of normalized traces\n- NPY : separate NumPy binary files of normalized traces")
+    types = input('Please enter here; can be none, one, or several file types. In the last case, separate them with spaces. Use the 3-letter phrases defined above (case-insensitive): ').lower()
+types = types.split()
+
+if not types:
+    if os.name == 'nt': atexit.unregister(os.system) # on Windows, no need to pause anymore
+    sys.exit()
+if 'png' in types:
+    fname = fn+'.png'
+    fig.savefig(fname, transparent=True, dpi=FIG_DPI_SAVE)
+    print('Saved to '+fname)
+if 'svg' in types:
+    fname = fn+'.svg'
+    fig.savefig(fname)
+    print('Saved to '+fname)
+if 'csv' in types:
+    from itertools import zip_longest
+    rows = zip_longest(*output[1], fillvalue='') # in case array lengths are different, need to fill empty strings
+    fname = fn+'.csv'
+    with open(fname, 'w', newline='') as f:
+        f.write(',,'.join(output[0]))
+        f.write('\n')
+        csv.writer(f).writerows(rows)
+    print('Saved to '+fname)
+if 'npy' in types:
+    for i, fname in enumerate(output[0]):
+        fname += '.npy'
+        if p.isfile(fname) and input("Warning: File '" + fname + "' will be overwritten! Continue? [y/n] ").lower() != 'y':
+            print("This file will not be saved.")
+            continue
+        np.save(fname, np.array(output[1][2*i:2*i+2]))
+        print('- Saved to '+fname)
