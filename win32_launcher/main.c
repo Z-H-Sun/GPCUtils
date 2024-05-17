@@ -1,8 +1,6 @@
 #include <windows.h>
 #include <stdio.h>
-#ifndef MAIN_APP_NAME // "readGPC" / "subBkgd" / "calcConv"
-    #define MAIN_APP_NAME "readGPC"
-#endif
+#include "main.h"
 
 int main() {
     SetConsoleTitle(MAIN_APP_NAME);
@@ -41,13 +39,12 @@ int main() {
     c[0] = '\"';
     c[1] = '\0';
     strcat(c, p);
-    strcat(c, "\\py34\\python.exe\" \"");
+    strcat(c, "\\" MAIN_PYTHON_FOLDER "\\python.exe\" \"");
     strcat(c, p);
     strcat(c, "\\bin\\" MAIN_APP_NAME ".pyc\" ");
 #endif
     strcat(c, s);
 
-    // TODO: consider embed python interpreter (ref: https://stackoverflow.com/a/76880004)
     STARTUPINFOA si = {0};
     PROCESS_INFORMATION pi = {0};
     si.cb = sizeof(si);

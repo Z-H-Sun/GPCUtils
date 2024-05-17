@@ -1,0 +1,23 @@
+diff --git a/backend_qt5.py b/backend_qt5.py
+index 20b0b5b..5b10ba8 100644
+--- a/backend_qt5.py
++++ b/backend_qt5.py
+@@ -108,6 +108,7 @@ def _create_qApp():
+     global qApp
+ 
+     if qApp is None:
++        QtWidgets.QApplication.addLibraryPath(os.path.join(os.path.dirname(os.path.realpath(__file__)), r"..\..\PyQt5\plugins")) # this sets the qt dll path, which removes the necessity of a 'qt.conf'
+         app = QtWidgets.QApplication.instance()
+         if app is None:
+             # check for DISPLAY env variable on X11 build of Qt
+@@ -124,7 +125,9 @@ def _create_qApp():
+                 if display is None or not re.search(r':\d', display):
+                     raise RuntimeError('Invalid DISPLAY variable')
+ 
+-            qApp = QtWidgets.QApplication([b"matplotlib"])
++            qApp = QtWidgets.QApplication([b"matplotlib", b"-platform", b"windows:dpiawareness=0"]) # for qt <5.6 (unfortunately only qt v5.5.1 was found compiled for python 3.4, the latest python version that can run on WinXP), AA_EnableHighDpiScaling (below) is not yet implemented, so on scaled screens, must turn off dpiawareness to let Windows take care of the scaling (although this compatible mode will make the window a bit blurry, but that's already the best treatment for this legacy version)
++            font = QtGui.QFont(); font.setFamily('Segoe UI') # on e.g., a Chinese system, qt will stupidly choose SimSum as the default font, which is ugly; use the real default font, Segoe UI, instead
++            qApp.setFont(font)
+             qApp.lastWindowClosed.connect(qApp.quit)
+         else:
+             qApp = app
