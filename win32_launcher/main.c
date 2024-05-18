@@ -50,6 +50,7 @@ int main() {
     si.cb = sizeof(si);
     if (!CreateProcess(NULL, c, NULL, NULL, FALSE, CREATE_NEW_PROCESS_GROUP, NULL, NULL, &si, &pi)) // fail to start
         goto fail;
+    printf("Loading...\r");
     WaitForSingleObject(pi.hProcess, INFINITE);
     DWORD exitCode = 0;
     GetExitCodeProcess(pi.hProcess, &exitCode);

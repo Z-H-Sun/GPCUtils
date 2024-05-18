@@ -30,15 +30,45 @@ void b2w_dispose(int count, wchar_t ** array) { // tidy up
 }
 // ==========
 
+#if PY_MINOR_VERSION < 10
+#define PY_FOPEN "_Py_fopen"
+#else // _Py_fopen is no longer available for Python >= 3.10
+#define PY_FOPEN "_Py_wfopen"
+#endif
+
+#define size(a) sizeof(a)/sizeof(a[0])
+
 int main(int argc, char *argv[]) {
+    int exit_code = 0;
+    const char* const dll_name[] = MAIN_PYTHON_DLL;
+    const char* const func_name[] = {"Py_SetProgramName", "Py_SetPythonHome", "Py_Initialize", "PySys_SetArgvEx", PY_FOPEN, "PyRun_SimpleFileExFlags", "Py_Finalize"};
+    HINSTANCE h[size(dll_name)] = {0};
+    FARPROC f[size(func_name)] = {0};
+
     SetConsoleTitle(MAIN_APP_NAME);
+
+    for (int i=0; i < size(h); i++) { // dynamic load dlls so there will be no path-finding issues (so that they can be organized into subfolders rather than hanging around in the root folder). mcvc runtime must be loaded before python dll because the latter is dependent on the former. mcvc++ runtime is also loaded here because qt and matplotlib libraries are dependent on it
+        if (! (h[i] = LoadLibrary(dll_name[i]))) {
+            printf("Unable to load %s\n", dll_name[i]);
+loaderror:
+            system("pause");
+            exit_code = 2;
+            goto finalize;
+        }
+    }
+    for (int i=0; i < size(f); i++) {
+        if (! (f[i] = GetProcAddress(h[size(h)-1], func_name[i]))) {
+            printf("Unable to get address for %s\n", func_name[i]);
+            goto loaderror;
+        }
+    }
 
     // get app file name
     char p[MAX_PATH];
     wchar_t wp[MAX_PATH];
     int l = GetModuleFileName(NULL, p, MAX_PATH);
     MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH);
-    Py_SetProgramName(wp); // i.e., argv[0]
+    f[0](wp); // Py_SetProgramName argv[0]
 
     // get app path
     l--;
@@ -49,9 +79,9 @@ int main(int argc, char *argv[]) {
     // get python package path
     strcat(p, "\\" MAIN_PYTHON_FOLDER);
     MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH); // now `p` and `wp` are no longer argv[0] but rather python package path
-    Py_SetPythonHome(wp); // will automatically append {this folder}/DLLs; {this folder}/Lib; {this folder}/Lib/site-packages to sys.path
+    f[1](wp); // Py_SetPythonHome; will automatically append {this folder}/DLLs; {this folder}/Lib; {this folder}/Lib/site-packages to sys.path
 
-    Py_Initialize();
+    f[2](); //Py_Initialize
 
     // get main pyc file name
     p[l] = '\0';
@@ -59,20 +89,26 @@ int main(int argc, char *argv[]) {
     MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH); // now `p` and `wp` are no longer argv[0] but rather main pyc file name
     wchar_t **_argv = b2w_array(argc, argv);
     _argv[0] = wp; // need to set python's argv[0] as the main pyc file name; otherwise, its path will not be properly appended to the import path
-    PySys_SetArgvEx(argc, _argv, TRUE);
+    f[3](argc, _argv, TRUE); // PySys_SetArgvEx
 
 #if PY_MINOR_VERSION < 10
-    FILE *file = _Py_fopen(p, "rb"); // must use Python's own fopen wrapper; otherwise, the difference in compiler for Python library and client applications will give binary incompatible FILE structures and thus cause crash
+    FILE *file = (FILE*) f[4](p, "rb"); // must use Python's own fopen wrapper; otherwise, the difference in compiler for Python library and client applications will give binary incompatible FILE structures and thus cause crash
 #else // _Py_fopen got removed for Python >= 3.10; in such cases, use _Py_wfopen instead
-    FILE* file = _Py_wfopen(wp, (wchar_t*) "r\0b\0\0");
+    FILE* file = (FILE*) f[4](wp, (wchar_t*) "r\0b\0\0");
 #endif
-    if (file)
-        PyRun_SimpleFileEx(file, p, TRUE); // close file afterwards
-    else {
+    if (file) {
+        printf("Loading...\r");
+        f[5](file, p, TRUE, NULL); // PyRun_SimpleFileExFlags; close file afterwards
+    } else {
         printf("Unable to locate %s\n", p);
         system("pause");
+        exit_code = 1;
     }
-    Py_Finalize();
+    f[6](); // Py_Finalize
     b2w_dispose(argc, _argv);
-    return (file ? 0 : 1);
+finalize:
+    for (int i=0; i < 3; i++) {
+        FreeLibrary(h[i]);
+    }
+    return exit_code;
 }
