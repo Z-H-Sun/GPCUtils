@@ -83,7 +83,10 @@ def bSub_onclick(event): # subtract background
     y_new = y - bg_list
     _, y_new, ymin, ymax = normalize(x, y_new)
 
-    plt.figure(2, figsize=FIG_SIZE, dpi=FIG_DPI_DISPLAY)
+    fig = plt.figure(2, figsize=FIG_SIZE, dpi=FIG_DPI_DISPLAY)
+    if FIG_TRANSPARENT:
+        fig.patch.set_visible(False)
+        plt.gca().patch.set_visible(False) # transparent background
     plt.plot(x, y_new, label='bkgd subtracted')
     plt.xlim(NORM_RANGE)
     plt.ylim(ymin-MARGIN, ymax+MARGIN)
@@ -113,6 +116,9 @@ x, y, ymin, ymax = res
 fig = plt.figure(1)
 ax = plt.gca()
 fig.canvas.mpl_connect('button_press_event', mouse_event)
+if FIG_TRANSPARENT: # transparent background
+    fig.patch.set_visible(False)
+    ax.patch.set_visible(False)
 
 plt.plot(x, y, label='raw')
 plt.xlim(NORM_RANGE)

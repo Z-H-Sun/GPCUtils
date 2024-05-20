@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from readGPC import *
+import time
 
 def plotFile(filename, offset=0):
     global num, ymin, ymax
@@ -39,8 +40,9 @@ ymin = 0; ymax = 0 # take into account negative peaks, then the plot range will 
 output = [[], []]
 
 fig, ax = plt.subplots(figsize=FIG_SIZE, dpi=FIG_DPI_DISPLAY)
-fig.patch.set_visible(False)
-ax.patch.set_visible(False) # transparent background
+if FIG_TRANSPARENT: # transparent background
+    fig.patch.set_visible(False)
+    ax.patch.set_visible(False)
 
 for i, fname in enumerate(argv):
     plotFile(fname, offset=i*OFFSET)
@@ -68,7 +70,7 @@ if not types:
     sys.exit()
 if 'png' in types:
     fname = fn+'.png'
-    fig.savefig(fname, transparent=True, dpi=FIG_DPI_SAVE)
+    fig.savefig(fname, transparent=FIG_TRANSPARENT, dpi=FIG_DPI_SAVE)
     print('Saved to '+fname)
 if 'svg' in types:
     fname = fn+'.svg'

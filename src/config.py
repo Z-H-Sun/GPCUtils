@@ -17,6 +17,7 @@ LINE_MARKER = '-' # solid '-'; dash '--'; dash dot '-.'; dot ':'
 FIG_SIZE = (4, 3) # width and height, in inches
 FIG_DPI_DISPLAY = 96 # dots per inch for display
 FIG_DPI_SAVE = 300 # dots per inch for saving as png
+FIG_TRANSPARENT = True # will have a white background if set to False
 SAVE_TYPES = 'ask' # output file types to save at the end: can be '' (nothing); 'ask' (will ask for user input); one of the following: 'png', 'svg', 'csv', and 'npy'; or a combination of the previous four types, e.g., 'png csv'
 SAVE_FILENAME = 'dir|output_|datetime:%Y-%m-%d-%H-%M-%S|_|gpcname|GPC' # output filename without extension: can be a plain-text path (either relative or absolute), e.g. 'C:/output'; or if it contains '|', the parsing rules are as follows: If the first element is 'dir', the saving path is the same as that of the first input file; if one of the elements is 'datetime:{format}', it will be replaced by the current datetime in the provided format; if one of the elements is 'gpcname', it will be replaced by the value of `GPCNAME` (e.g., 'DMF'); all elements will be concatenated in the end 
 BASELINE_ASK = True # whether to ask user when a valid baseline is provided; when False, baseline is always applied silently

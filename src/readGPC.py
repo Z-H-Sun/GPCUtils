@@ -8,11 +8,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os.path as p
 import sys
-import time
 import logging
+import warnings
 
 sys.dont_write_bytecode = True # do not produce garbage cache (because the config py files to import are subject to constant changes)
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+warnings.filterwarnings('ignore')
 
 #dir_t = p.dirname(p.realpath(__file__))
 #f = open(p.join(dir_t, 'config.py')); exec(f.read()); f.close()

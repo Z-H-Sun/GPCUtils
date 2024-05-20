@@ -126,6 +126,9 @@ x, y, ymin, ymax = res
 fig = plt.figure()
 ax = plt.gca()
 fig.canvas.mpl_connect('button_press_event', mouse_event)
+if FIG_TRANSPARENT: # transparent background
+    fig.patch.set_visible(False)
+    ax.patch.set_visible(False)
 
 plt.rcParams['legend.fontsize'] = LEGEND_FONTSIZE*5//4
 plt.plot(x, y, label=LEGEND[3])
