@@ -1,4 +1,3 @@
-#include <Python.h>
 #include <windows.h>
 #include <stdio.h>
 #include "main.h"
@@ -40,52 +39,73 @@ void b2w_dispose(int count, wchar_t ** array) { // tidy up
 
 int main(int argc, char *argv[]) {
     int exit_code = 0;
-    const char* const dll_name[] = MAIN_PYTHON_DLL;
     const char* const func_name[] = {"Py_SetProgramName", "Py_SetPythonHome", "Py_Initialize", "PySys_SetArgvEx", PY_FOPEN, "PyRun_SimpleFileExFlags", "Py_Finalize"};
-    HINSTANCE h[size(dll_name)] = {0};
-    FARPROC f[size(func_name)] = {0};
+    HINSTANCE h;
+    FARPROC f[size(func_name)];
 
     SetConsoleTitle(MAIN_APP_NAME);
-
-    for (int i=0; i < size(h); i++) { // dynamic load dlls so there will be no path-finding issues (so that they can be organized into subfolders rather than hanging around in the root folder). mcvc runtime must be loaded before python dll because the latter is dependent on the former. mcvc++ runtime is also loaded here because qt and matplotlib libraries are dependent on it
-        if (! (h[i] = LoadLibrary(dll_name[i]))) {
-            printf("Unable to load %s\n", dll_name[i]);
-loaderror:
-            system("pause");
-            exit_code = 2;
-            goto finalize;
-        }
-    }
-    for (int i=0; i < size(f); i++) {
-        if (! (f[i] = GetProcAddress(h[size(h)-1], func_name[i]))) {
-            printf("Unable to get address for %s\n", func_name[i]);
-            goto loaderror;
-        }
-    }
 
     // get app file name
     char p[MAX_PATH];
     wchar_t wp[MAX_PATH];
     int l = GetModuleFileName(NULL, p, MAX_PATH);
-    MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH);
-    f[0](wp); // Py_SetProgramName argv[0]
+    MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH); // wp is now argv[0]
 
-    // get app path
+    // get app path (by setting `p[l] = '\0'`)
     l--;
     while (p[l] != '/' && p[l] != '\\')
         l--;
-    p[l] = '\0';
 
     // get python package path
-    strcat(p, "\\" MAIN_PYTHON_FOLDER);
+    const int lp = strlen(MAIN_PYTHON_DIR)+1;
+    const int lt = l+lp;
+    memcpy(&p[l], "\\" MAIN_PYTHON_DIR, lp+1); // p is now python package path (with tailing \0)
+
+    // prepend python package folder to PATH
+    char* path_env_old = getenv("PATH");
+    int path_env_len = 0;
+    if (path_env_old) // not NULL
+        path_env_len = strlen(path_env_old);
+    char path_env[MAX_PATH+path_env_len+8];
+    memcpy(path_env, "PATH=", 5);
+    memcpy(&path_env[5], p, lt);
+    if (path_env_old) // not NULL
+        path_env[lt+5] = ';';
+        memcpy(&path_env[lt+6], path_env_old, path_env_len+1);
+    _putenv(path_env);
+
+    // dynamic load dlls so there will be no path-finding issues (so that they can be organized into subfolders rather than hanging around in the root folder)
+#if PY_MINOR_VERSION > 4
+    LoadLibrary("ucrtbase.dll"); // this seems necessary for Windows 7 when ucrtbase.dll is not initially included in PATH; otherwise, the following error will be thrown: ucrtbase.terminate could not be located in the dynamic link library api-ms-win-crt-runtime-l1-1-10.dll
+#endif
+    if (! (h = LoadLibrary(MAIN_PYTHON_DLL))) {
+        puts("Unable to load " MAIN_PYTHON_DLL);
+loaderror:
+        system("pause");
+        exit_code = 2;
+        goto finalize;
+    }
+    for (int i=0; i < size(f); i++) {
+        if (! (f[i] = GetProcAddress(h, func_name[i]))) {
+            char err_str[50] = "Unable to get address for ";
+            const int err_str_len = 26; // strlen(err_str);
+            memcpy(&err_str[err_str_len], func_name[i], 24); // strlen(err_str_len));
+            puts(err_str);
+            goto loaderror;
+        }
+    }
+
+    f[0](wp); // Py_SetProgramName argv[0]
+
     MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH); // now `p` and `wp` are no longer argv[0] but rather python package path
     f[1](wp); // Py_SetPythonHome; will automatically append {this folder}/DLLs; {this folder}/Lib; {this folder}/Lib/site-packages to sys.path
 
     f[2](); //Py_Initialize
 
     // get main pyc file name
-    p[l] = '\0';
-    strcat(p, "\\bin\\" MAIN_APP_NAME ".pyc");
+    const char* const pyc_name = "\\bin\\" MAIN_APP_NAME ".pyc";
+    const int lpc = strlen(pyc_name)+1; // including the tailing \0
+    memcpy(&p[l], pyc_name, lpc);
     MultiByteToWideChar(CP_ACP, 0, p, -1, wp, MAX_PATH); // now `p` and `wp` are no longer argv[0] but rather main pyc file name
     wchar_t **_argv = b2w_array(argc, argv);
     _argv[0] = wp; // need to set python's argv[0] as the main pyc file name; otherwise, its path will not be properly appended to the import path
@@ -100,15 +120,16 @@ loaderror:
         printf("Loading...\r");
         f[5](file, p, TRUE, NULL); // PyRun_SimpleFileExFlags; close file afterwards
     } else {
-        printf("Unable to locate %s\n", p);
+        char err_str[18+lpc];
+        memcpy(err_str, "Unable to locate ", 17);
+        memcpy(&err_str[17], p, l+lpc);
+        puts(err_str);
         system("pause");
         exit_code = 1;
     }
     f[6](); // Py_Finalize
     b2w_dispose(argc, _argv);
 finalize:
-    for (int i=0; i < 3; i++) {
-        FreeLibrary(h[i]);
-    }
+    FreeLibrary(h);
     return exit_code;
 }

@@ -1,6 +1,7 @@
 __pycache__/
 .vscode/
-/dist/
+/dist*/
+test.*
 *.py[cod]
 *.o
 *.exe

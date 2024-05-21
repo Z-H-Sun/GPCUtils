@@ -39,7 +39,7 @@ int main() {
     c[0] = '\"';
     c[1] = '\0';
     strcat(c, p);
-    strcat(c, "\\" MAIN_PYTHON_FOLDER "\\python.exe\" \"");
+    strcat(c, "\\" MAIN_PYTHON_DIR "\\python.exe\" \"");
     strcat(c, p);
     strcat(c, "\\bin\\" MAIN_APP_NAME ".pyc\" ");
 #endif

@@ -1,0 +1,55 @@
+diff --git a/backend_qt5.py b/backend_qt5.py
+index 20b0b5b..8af845c 100644
+--- a/backend_qt5.py
++++ b/backend_qt5.py
+@@ -108,6 +108,7 @@ def _create_qApp():
+     global qApp
+ 
+     if qApp is None:
++        QtWidgets.QApplication.addLibraryPath(os.path.join(os.path.dirname(os.path.realpath(__file__)), r"..\..\PyQt5\plugins")) # this sets the qt dll path, which removes the necessity of a 'qt.conf'
+         app = QtWidgets.QApplication.instance()
+         if app is None:
+             # check for DISPLAY env variable on X11 build of Qt
+@@ -123,8 +124,13 @@ def _create_qApp():
+                 display = os.environ.get('DISPLAY')
+                 if display is None or not re.search(r':\d', display):
+                     raise RuntimeError('Invalid DISPLAY variable')
+-
++            try:
++                QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # this must be set before QCoreApplication is created
++                QtWidgets.QApplication.setHighDpiScaleFactorRoundingPolicy(QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
++            except AttributeError: pass # Attribute only exists for Qt>=5.6 / 5.14
+             qApp = QtWidgets.QApplication([b"matplotlib"])
++            font = QtGui.QFont(); font.setFamily("Segoe UI") # on e.g., a Chinese system, qt will stupidly choose SimSum as the default font, which is ugly; use the real default font, Segoe UI (for Windows>=7), instead
++            qApp.setFont(font)
+             qApp.lastWindowClosed.connect(qApp.quit)
+         else:
+             qApp = app
+@@ -132,7 +138,6 @@ def _create_qApp():
+     if is_pyqt5():
+         try:
+             qApp.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+-            qApp.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
+         except AttributeError:
+             pass
+ 
+@@ -270,7 +275,7 @@ class FigureCanvasQT(QtWidgets.QWidget, FigureCanvasBase):
+         # Not available on Qt4 or some older Qt5.
+         try:
+             # self.devicePixelRatio() returns 0 in rare cases
+-            return self.devicePixelRatio() or 1
++            return self.devicePixelRatioF() or 1 # in high version qt, devicePixelRatioF() replaces devicePixelRatio() because the ratio can be a float not interger
+         except AttributeError:
+             return 1
+ 
+@@ -570,7 +575,9 @@ class FigureManagerQT(FigureManagerBase):
+         self.window.closing.connect(canvas.close_event)
+         self.window.closing.connect(self._widgetclosed)
+ 
+-        self.window.setWindowTitle("Figure %d" % num)
++        main = os.path.splitext(os.path.basename(sys.argv[0]))[0]
++        if main.lower() != "readgpc": main += " - Process" if num == 1 else " - Result"
++        self.window.setWindowTitle(main) # instead of "Figure X," customize a better-understandable title for our apps
+         image = os.path.join(matplotlib.rcParams['datapath'],
+                              'images', 'matplotlib.svg')
+         self.window.setWindowIcon(QtGui.QIcon(image))
