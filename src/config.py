@@ -28,6 +28,7 @@ BASELINE_PARAMS = (False, '!baseline!', 1.0) # a tuple, (Boolean: always, String
 # for example, (False, '!baseline!', 1.0) means: if a '!baseline!.csv' or '!baseline!.npy' or ... is dragged onto this app, all GPC traces will be subtracted by the baseline data provided in that file
 
 PLT_RCPARAMS = { # fine-tune matplotlib configs here
+#   'backend': 'QtAgg', # uncomment this line to set preferable backend. QtAgg is recommended: To do so, install PyQt6 using pip (for older OS where Qt6 does not support, install PyQt5 and set backend to 'Qt5Agg' instead)
     'font.family': 'Arial', # default font
     'mathtext.fontset': 'custom',
     'mathtext.rm': 'Arial', # use Arial for displaying LaTeX formula

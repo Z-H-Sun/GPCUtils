@@ -3,11 +3,11 @@ from readGPC import *
 import time
 
 def plotFile(filename, offset=0):
-    global num, ymin, ymax
+    global ymin, ymax
     data = readFile(filename, baseline)
     if data is None:
         return
-    num += 1
+    num = trace_index(increment=True)
     x, y, _ymin, _ymax = data
     longName = p.splitext(p.basename(filename))[0]
     output[0].append(longName)
@@ -46,7 +46,7 @@ if FIG_TRANSPARENT: # transparent background
 
 for i, fname in enumerate(argv):
     plotFile(fname, offset=i*OFFSET)
-if not num:
+if not trace_index():
     print('No valid input file to plot.')
     sys.exit()
 plt.legend()
@@ -87,7 +87,7 @@ if 'csv' in types:
     print('Saved to '+fname)
 if 'npy' in types:
     for i, fname in enumerate(output[0]):
-        fname += '.npy'
+        fname = p.join(p.dirname(fn), fname)+'.npy'
         if p.isfile(fname) and input("Warning: File '" + fname + "' will be overwritten! Continue? [y/n] ").lower() != 'y':
             print("This file will not be saved.")
             continue

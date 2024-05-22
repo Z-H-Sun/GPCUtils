@@ -5,6 +5,7 @@ if os.name == 'nt':
 
 import csv
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import os.path as p
 import sys
@@ -21,8 +22,13 @@ warnings.filterwarnings('ignore')
 # two ways of loading config py files: above (commented out): execfile; below (used here): import (need to add app folder to import PATH; see __init__.py)
 from config import *
 from configGPC import *
-plt.rcParams.update(PLT_RCPARAMS)
+matplotlib.rcParams.update(PLT_RCPARAMS)
 num = 0 # index of GPC trace
+
+def trace_index(increment=False): # enable access of variable `num` from other files
+    global num
+    if increment: num += 1
+    return num
 
 def normalize(xVals, yVals):
     iBegin = np.searchsorted(xVals, NORM_RANGE[0])
