@@ -64,8 +64,13 @@ def normalize(xVals, yVals):
     return (xVals, yVals2, -yMin2, yMax2) # the last two will be useful when determining the y-range of the plot
 
 def readCSV(f): # f: File Object
+    def wrapper(gen): # data copied from chloroform GPC software contains tailing \0's, which will cause _csv.Error: line contains NULL byte, thus needing error catching
+        while True:
+            try: yield next(gen)
+            except StopIteration: break
+            except Exception: pass # ignore csv error
     data = []
-    r = csv.reader(f, skipinitialspace=True, delimiter=DELIMITER)
+    r = wrapper(csv.reader(f, skipinitialspace=True, delimiter=DELIMITER))
     dataStart = False
     for row in r:
         if not row: continue # empty row

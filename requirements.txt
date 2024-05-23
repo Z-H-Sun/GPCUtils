@@ -1,3 +1,8 @@
 numpy>=1.11.0
 scipy>=1.2.0
 matplotlib>=2.2.5
+
+pywin32>=222;platform_system=='Windows'
+
+#PyQt5;python_version<'3.6'
+#PyQt6;python_version>='3.6'
